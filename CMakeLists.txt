@@ -8,6 +8,8 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 # Source files
 set(SOURCES
     src/main.cpp
+    src/OS.h
+    src/OS.cpp
     src/permission.h
     src/rules.h
     src/rules.cpp
