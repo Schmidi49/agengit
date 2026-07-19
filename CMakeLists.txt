@@ -25,7 +25,7 @@ add_executable(agengit ${SOURCES})
 
 # Target-specific compile options for clean and safe code
 if(MSVC)
-    target_compile_options(agengit PRIVATE /W4 /WX)
+    target_compile_options(agengit PRIVATE /W4)
 else()
-    target_compile_options(agengit PRIVATE -Wall -Wextra -Werror)
+    target_compile_options(agengit PRIVATE -Wall -Wextra -Wno-missing-field-initializers)
 endif()

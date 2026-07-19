@@ -8,4 +8,8 @@
 // Returns the exit code of the spawned process.
 int execute_command(const std::vector<std::string>& args);
 
+// Runs the git command with the given arguments, capturing stdout and stderr output.
+// Returns the exit code of the spawned process.
+int capture_command(const std::vector<std::string>& args, std::string& out_stdout, std::string& out_stderr);
+
 #endif // OS_H

@@ -127,6 +127,117 @@ int execute_command(const std::vector<std::string>& args) {
 
     return static_cast<int>(exit_code);
 }
+
+int capture_command(const std::vector<std::string>& args, std::string& out_stdout, std::string& out_stderr) {
+    // Construct command line starting with "git"
+    std::wstring cmd = L"git";
+    for (const auto& arg : args) {
+        cmd += L" " + escape_argument(to_wstring(arg));
+    }
+
+    // Set up standard handle redirection pipes
+    HANDLE hChildStd_OUT_Rd = NULL;
+    HANDLE hChildStd_OUT_Wr = NULL;
+    HANDLE hChildStd_ERR_Rd = NULL;
+    HANDLE hChildStd_ERR_Wr = NULL;
+
+    SECURITY_ATTRIBUTES saAttr;
+    saAttr.nLength = sizeof(SECURITY_ATTRIBUTES);
+    saAttr.bInheritHandle = TRUE;
+    saAttr.lpSecurityDescriptor = NULL;
+
+    if (!CreatePipe(&hChildStd_OUT_Rd, &hChildStd_OUT_Wr, &saAttr, 0)) {
+        throw std::runtime_error("Failed to create stdout pipe");
+    }
+    if (!SetHandleInformation(hChildStd_OUT_Rd, HANDLE_FLAG_INHERIT, 0)) {
+        CloseHandle(hChildStd_OUT_Rd);
+        CloseHandle(hChildStd_OUT_Wr);
+        throw std::runtime_error("Failed to set stdout handle information");
+    }
+
+    if (!CreatePipe(&hChildStd_ERR_Rd, &hChildStd_ERR_Wr, &saAttr, 0)) {
+        CloseHandle(hChildStd_OUT_Rd);
+        CloseHandle(hChildStd_OUT_Wr);
+        throw std::runtime_error("Failed to create stderr pipe");
+    }
+    if (!SetHandleInformation(hChildStd_ERR_Rd, HANDLE_FLAG_INHERIT, 0)) {
+        CloseHandle(hChildStd_OUT_Rd);
+        CloseHandle(hChildStd_OUT_Wr);
+        CloseHandle(hChildStd_ERR_Rd);
+        CloseHandle(hChildStd_ERR_Wr);
+        throw std::runtime_error("Failed to set stderr handle information");
+    }
+
+    STARTUPINFOW si;
+    PROCESS_INFORMATION pi;
+    ZeroMemory(&si, sizeof(si));
+    si.cb = sizeof(si);
+    si.hStdOutput = hChildStd_OUT_Wr;
+    si.hStdError = hChildStd_ERR_Wr;
+    si.hStdInput = NULL;
+    si.dwFlags |= STARTF_USESTDHANDLES;
+    ZeroMemory(&pi, sizeof(pi));
+
+    std::vector<wchar_t> cmd_buffer(cmd.begin(), cmd.end());
+    cmd_buffer.push_back(L'\0');
+
+    BOOL success = CreateProcessW(
+        nullptr,
+        cmd_buffer.data(),
+        nullptr,
+        nullptr,
+        TRUE, // Inherit handles
+        0,
+        nullptr,
+        nullptr,
+        &si,
+        &pi
+    );
+
+    if (!success) {
+        DWORD err = GetLastError();
+        CloseHandle(hChildStd_OUT_Rd);
+        CloseHandle(hChildStd_OUT_Wr);
+        CloseHandle(hChildStd_ERR_Rd);
+        CloseHandle(hChildStd_ERR_Wr);
+        throw std::runtime_error("Failed to launch git process in capture mode (Error code " + std::to_string(err) + ")");
+    }
+
+    // Close the write ends of the pipes in the parent process
+    CloseHandle(hChildStd_OUT_Wr);
+    CloseHandle(hChildStd_ERR_Wr);
+
+    // Read output from the pipes
+    auto read_pipe = [](HANDLE hPipe, std::string& out) {
+        char buffer[1024];
+        DWORD bytes_read = 0;
+        while (ReadFile(hPipe, buffer, sizeof(buffer) - 1, &bytes_read, nullptr) && bytes_read > 0) {
+            out.append(buffer, bytes_read);
+        }
+    };
+
+    read_pipe(hChildStd_OUT_Rd, out_stdout);
+    read_pipe(hChildStd_ERR_Rd, out_stderr);
+
+    CloseHandle(hChildStd_OUT_Rd);
+    CloseHandle(hChildStd_ERR_Rd);
+
+    // Wait until git completes execution
+    WaitForSingleObject(pi.hProcess, INFINITE);
+
+    DWORD exit_code = 0;
+    if (!GetExitCodeProcess(pi.hProcess, &exit_code)) {
+        DWORD err = GetLastError();
+        CloseHandle(pi.hProcess);
+        CloseHandle(pi.hThread);
+        throw std::runtime_error("Failed to get git process exit code in capture mode (Error code " + std::to_string(err) + ")");
+    }
+
+    CloseHandle(pi.hProcess);
+    CloseHandle(pi.hThread);
+
+    return static_cast<int>(exit_code);
+}
 #else
 #include <unistd.h>
 #include <sys/wait.h>
@@ -152,6 +263,79 @@ int execute_command(const std::vector<std::string>& args) {
         std::cerr << "execvp() failed: " << std::strerror(errno) << "\n";
         _exit(127);
     } else {
+        int status;
+        if (waitpid(pid, &status, 0) == -1) {
+            throw std::runtime_error(std::string("waitpid() failed: ") + std::strerror(errno));
+        }
+        if (WIFEXITED(status)) {
+            return WEXITSTATUS(status);
+        } else if (WIFSIGNALED(status)) {
+            return 128 + WTERMSIG(status);
+        }
+        return 1;
+    }
+}
+
+int capture_command(const std::vector<std::string>& args, std::string& out_stdout, std::string& out_stderr) {
+    int out_pipe[2];
+    int err_pipe[2];
+    if (pipe(out_pipe) == -1) {
+        throw std::runtime_error(std::string("pipe() for stdout failed: ") + std::strerror(errno));
+    }
+    if (pipe(err_pipe) == -1) {
+        close(out_pipe[0]);
+        close(out_pipe[1]);
+        throw std::runtime_error(std::string("pipe() for stderr failed: ") + std::strerror(errno));
+    }
+
+    std::vector<char*> argv;
+    std::string cmd = "git";
+    argv.push_back(const_cast<char*>(cmd.c_str()));
+    for (const auto& arg : args) {
+        argv.push_back(const_cast<char*>(arg.c_str()));
+    }
+    argv.push_back(nullptr);
+
+    pid_t pid = fork();
+    if (pid == -1) {
+        close(out_pipe[0]);
+        close(out_pipe[1]);
+        close(err_pipe[0]);
+        close(err_pipe[1]);
+        throw std::runtime_error(std::string("fork() failed: ") + std::strerror(errno));
+    }
+
+    if (pid == 0) {
+        // Child process
+        dup2(out_pipe[1], STDOUT_FILENO);
+        dup2(err_pipe[1], STDERR_FILENO);
+        close(out_pipe[0]);
+        close(out_pipe[1]);
+        close(err_pipe[0]);
+        close(err_pipe[1]);
+
+        execvp("git", argv.data());
+        std::cerr << "execvp() failed: " << std::strerror(errno) << "\n";
+        _exit(127);
+    } else {
+        // Parent process
+        close(out_pipe[1]);
+        close(err_pipe[1]);
+
+        auto read_pipe = [](int fd, std::string& out) {
+            char buffer[1024];
+            ssize_t bytes_read;
+            while ((bytes_read = read(fd, buffer, sizeof(buffer) - 1)) > 0) {
+                out.append(buffer, bytes_read);
+            }
+        };
+
+        read_pipe(out_pipe[0], out_stdout);
+        read_pipe(err_pipe[0], out_stderr);
+
+        close(out_pipe[0]);
+        close(err_pipe[0]);
+
         int status;
         if (waitpid(pid, &status, 0) == -1) {
             throw std::runtime_error(std::string("waitpid() failed: ") + std::strerror(errno));

@@ -46,6 +46,10 @@ If the command is malformed, if the real Git process fails to launch or crashes,
 
 Security rules are compiled directly into the executable via a C++ header file (`rules.h` or `config.h`) before compiling the binary. This ensures that the binary is completely self-contained and prevents runtime configuration tampering.
 
+### Conditional Commands & Upstream Tracking Note
+`agengit` supports conditional commands (configured in `src/permission.h`), such as restricting `git push` to branch matching patterns and verifying origin synchronization (`require_origin_match`).
+* **Upstream Requirement**: If `require_origin_match` is enabled, the checked branch **must** have an upstream tracking branch configured (e.g., set via `git push -u origin <branch>`). If no tracking branch is configured, `agengit` cannot compare local commits with the remote tracking branch and will deny the operation by default for safety.
+
 ---
 
 ## Build Instructions
