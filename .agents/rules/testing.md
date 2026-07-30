@@ -6,6 +6,13 @@
 
 ---
 
+## Defensive & Adversarial Testing Policy
+
+When writing code or validating safety policies:
+- **Defensive & Adversarial Mindset**: Always program and test extremely defensively, assuming an adversarial developer or agent is actively trying to bypass `agengit` guardrails. Test against flag spoofing, argument injection, path traversal, dirty repository states, and unapproved subcommands. When in doubt, deny access rather than allowing it.
+
+---
+
 ## Testing Policy
 
 When validating code changes or running tests:
@@ -33,7 +40,9 @@ Replace `<target>` with `alpine` or `wine`:
    docker run -d --name agengit-test-<target> agengit-<target> tail -f /dev/null
    ```
 
-3. **Execute Atomic Test Commands (`docker exec`):**
+3. **Execute Atomic Test Commands & Temporary Test Scripts (`docker exec`):**
+   - Both `docker exec` and interactive/piped execution (`docker exec -i`) are allowed by permissions.
+   - **Temporary Container Test Scripts**: Always create and run temporary test scripts inside the Docker container (e.g. piping via `docker exec -i agengit-test-<target> bash < script.sh` or writing scripts directly inside container `/tmp/`). Executing commands inside the container allows full execution freedom without requiring host user approvals or modifying host files.
    - **Initialize Test Environment:**
      ```bash
      docker exec agengit-test-<target> ./tests/create_test_repo.sh /tmp/test_repo
@@ -52,9 +61,3 @@ Replace `<target>` with `alpine` or `wine`:
 ### 3. Test Repository Generator & Cleanup Policy
 - **Mandatory Test Repo Usage:** Whenever testing an `agengit` feature (independent of whether testing natively on the host OS or inside a Docker container), generate a fresh test Git repository using the script `tests/create_test_repo.sh <target_empty_directory>`. If testing on a real host machine, ensure any temporary test sandbox directory is cleaned up after testing completes.
 - **Evolving the Test Repo:** If newly implemented `agengit` commands require additional Git states, branches, or file configurations in the test repository, `tests/create_test_repo.sh` should be developed further as part of the feature development process.
-
----
-
-## Operating System Abstraction Enforcement
-- Ensure any platform-specific code (e.g. process execution, pipes, string conversions) is strictly encapsulated within `src/OS.h` and `src/OS.cpp`.
-- Verify that both Linux and Windows binaries produce identical output headers (`#### PERMISSION DENIED ####`, `#### COMMAND NOT IMPLEMENTED ####`, `#### ERROR ####`) and exit codes.
