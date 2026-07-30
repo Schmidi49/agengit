@@ -12,12 +12,29 @@
         "CMAKE_CXX_COMPILER": "C:/msys64/mingw64/bin/g++.exe",
         "CMAKE_C_COMPILER": "C:/msys64/mingw64/bin/gcc.exe"
       }
+    },
+    {
+      "name": "wine-mingw",
+      "displayName": "Wine MinGW Cross-Compile",
+      "description": "Configure Windows build using MinGW-w64 cross compiler on Linux",
+      "generator": "Unix Makefiles",
+      "binaryDir": "${sourceDir}/build-wine",
+      "cacheVariables": {
+        "CMAKE_SYSTEM_NAME": "Windows",
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_CXX_COMPILER": "x86_64-w64-mingw32-g++",
+        "CMAKE_C_COMPILER": "x86_64-w64-mingw32-gcc"
+      }
     }
   ],
   "buildPresets": [
     {
       "name": "default",
       "configurePreset": "default"
+    },
+    {
+      "name": "wine-mingw",
+      "configurePreset": "wine-mingw"
     }
   ]
 }

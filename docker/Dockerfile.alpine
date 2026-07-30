@@ -1,0 +1,17 @@
+FROM alpine:3.20
+
+# Install build dependencies, git, and cmake
+RUN apk add --no-cache \
+    build-base \
+    cmake \
+    git \
+    bash \
+    ninja
+
+WORKDIR /workspace
+
+# Copy source files into container
+COPY . /workspace
+
+# Default action: Configure, compile, and run basic execution test
+CMD ["sh", "-c", "cmake -B build -DCMAKE_BUILD_TYPE=Release -G Ninja && cmake --build build && ./build/agengit status"]

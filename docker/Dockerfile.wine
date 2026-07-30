@@ -1,0 +1,32 @@
+FROM alpine:3.20
+
+# Install Wine, MinGW-w64 cross compiler, CMake, and build tools
+RUN apk add --no-cache \
+    wine \
+    mingw-w64-gcc \
+    mingw-w64-g++ \
+    cmake \
+    make \
+    git \
+    bash \
+    curl \
+    unzip
+
+# Environment variables for headless Wine execution
+ENV WINEPREFIX=/root/.wine
+ENV WINEDEBUG=-all
+
+# Initialize Wine prefix and install MinGit (Git for Windows) inside Wine environment
+RUN wineboot --init && \
+    mkdir -p "/root/.wine/drive_c/Program Files/Git" && \
+    curl -sSL -o /tmp/mingit.zip https://github.com/git-for-windows/git/releases/download/v2.45.2.windows.1/MinGit-2.45.2-64-bit.zip && \
+    unzip -q /tmp/mingit.zip -d "/root/.wine/drive_c/Program Files/Git" && \
+    rm /tmp/mingit.zip
+
+WORKDIR /workspace
+
+# Copy source files into container
+COPY . /workspace
+
+# Default action: Cross-compile Windows binary using CMake preset and run agengit.exe under Wine
+CMD ["sh", "-c", "cmake --preset wine-mingw && cmake --build build-wine && wine64 build-wine/Release/agengit.exe status"]
