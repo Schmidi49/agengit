@@ -34,6 +34,10 @@ When validating code changes or running tests:
     docker run --rm agengit-wine
     ```
 
+### 3. Test Repository Generator & Cleanup Policy
+- **Mandatory Test Repo Usage:** Whenever testing an `agengit` feature (independent of whether testing natively on the host OS or inside a Docker container), generate a fresh test Git repository using the script `tests/create_test_repo.sh <target_empty_directory>`. If testing on a real host machine, ensure any temporary test sandbox directory is cleaned up after testing completes.
+- **Evolving the Test Repo:** If newly implemented `agengit` commands require additional Git states, branches, or file configurations in the test repository, `tests/create_test_repo.sh` should be developed further as part of the feature development process.
+
 ---
 
 ## Operating System Abstraction Enforcement
