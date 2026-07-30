@@ -18,21 +18,36 @@ When validating code changes or running tests:
   ```
 
 ### 2. Opposing OS Testing (via Docker)
-- Always validate the opposing operating system using the Docker testing environments located in `docker/`:
+- Always validate the opposing operating system using the Docker testing environments located in `docker/` (`docker/Dockerfile.alpine` for Linux, `docker/Dockerfile.wine` for Windows):
   
-  - **Testing Linux Target (from Windows host)**:
-    Build and run the Alpine Linux Docker container:
-    ```bash
-    docker build -t agengit-alpine -f docker/Dockerfile.alpine .
-    docker run --rm agengit-alpine
-    ```
+#### Dynamic 3-Step Container Testing Workflow
+Replace `<target>` with `alpine` or `wine`:
 
-  - **Testing Windows Target (from Linux host)**:
-    Build and run the Wine Docker container:
-    ```bash
-    docker build -t agengit-wine -f docker/Dockerfile.wine .
-    docker run --rm agengit-wine
-    ```
+1. **Build Container Image:**
+   ```bash
+   docker build -t agengit-<target> -f docker/Dockerfile.<target> .
+   ```
+
+2. **Launch Detached Named Container:**
+   ```bash
+   docker run -d --name agengit-test-<target> agengit-<target> tail -f /dev/null
+   ```
+
+3. **Execute Atomic Test Commands (`docker exec`):**
+   - **Initialize Test Environment:**
+     ```bash
+     docker exec agengit-test-<target> ./tests/create_test_repo.sh /tmp/test_repo
+     ```
+   - **Execute Atomic `agengit` Function & Policy Checks:**
+     ```bash
+     docker exec agengit-test-<target> /workspace/build/agengit -C /tmp/test_repo status
+     docker exec agengit-test-<target> /workspace/build/agengit -C /tmp/test_repo rebase main
+     ```
+
+4. **Cleanup Container:**
+   ```bash
+   docker rm -f agengit-test-<target>
+   ```
 
 ### 3. Test Repository Generator & Cleanup Policy
 - **Mandatory Test Repo Usage:** Whenever testing an `agengit` feature (independent of whether testing natively on the host OS or inside a Docker container), generate a fresh test Git repository using the script `tests/create_test_repo.sh <target_empty_directory>`. If testing on a real host machine, ensure any temporary test sandbox directory is cleaned up after testing completes.

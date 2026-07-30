@@ -13,5 +13,5 @@ WORKDIR /workspace
 # Copy source files into container
 COPY . /workspace
 
-# Default action: Configure, compile, and run basic execution test
-CMD ["sh", "-c", "cmake -B build -DCMAKE_BUILD_TYPE=Release -G Ninja && cmake --build build && ./build/agengit status"]
+# Default action: Configure, compile, initialize test repo at /tmp/test_repo, and keep container active
+CMD ["sh", "-c", "cmake -B build -DCMAKE_BUILD_TYPE=Release -G Ninja && cmake --build build && ./tests/create_test_repo.sh /tmp/test_repo && tail -f /dev/null"]

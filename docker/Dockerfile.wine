@@ -28,5 +28,5 @@ WORKDIR /workspace
 # Copy source files into container
 COPY . /workspace
 
-# Default action: Cross-compile Windows binary using CMake preset and run agengit.exe under Wine
-CMD ["sh", "-c", "cmake --preset wine-mingw && cmake --build build-wine && wine64 build-wine/Release/agengit.exe status"]
+# Default action: Cross-compile Windows binary using CMake preset, initialize test repo at /tmp/test_repo, and keep container active
+CMD ["sh", "-c", "cmake --preset wine-mingw && cmake --build build-wine && ./tests/create_test_repo.sh /tmp/test_repo && tail -f /dev/null"]
