@@ -18,10 +18,13 @@ When writing code or validating safety policies:
 When validating code changes or running tests:
 
 ### 1. Local Host OS Testing
-- Always run local native builds and tests directly on your host operating system using standard CMake commands:
+- Always run local native builds, install to a temporary prefix or system path, and test the installed executable directly from `PATH`:
   ```bash
   cmake -B build -DCMAKE_BUILD_TYPE=Release
   cmake --build build
+  cmake --install build --prefix /tmp/agengit_test_install
+  export PATH="/tmp/agengit_test_install/bin:$PATH"
+  agengit status
   ```
 
 ### 2. Opposing OS Testing (via Docker)
@@ -47,10 +50,21 @@ Replace `<target>` with `alpine` or `wine`:
      ```bash
      docker exec agengit-test-<target> ./tests/create_test_repo.sh /tmp/test_repo
      ```
+   - **Install Executable & Verify system-wide PATH Callability:**
+     - On **Alpine (Linux)**:
+       ```bash
+       docker exec agengit-test-alpine cmake --install /workspace/build
+       docker exec agengit-test-alpine agengit -C /tmp/test_repo status
+       ```
+     - On **Wine (Windows)**:
+       ```bash
+       docker exec agengit-test-wine cmake --install /workspace/build-wine
+       docker exec agengit-test-wine agengit -C /tmp/test_repo status
+       ```
    - **Execute Atomic `agengit` Function & Policy Checks:**
      ```bash
-     docker exec agengit-test-<target> /workspace/build/agengit -C /tmp/test_repo status
-     docker exec agengit-test-<target> /workspace/build/agengit -C /tmp/test_repo rebase main
+     docker exec agengit-test-<target> agengit -C /tmp/test_repo status
+     docker exec agengit-test-<target> agengit -C /tmp/test_repo rebase main
      ```
 
 4. **Cleanup Container:**

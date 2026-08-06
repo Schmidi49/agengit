@@ -78,7 +78,38 @@ This generates the executable:
 - **Windows**: `build/Release/agengit.exe` (or `build/Debug/agengit.exe` for debug)
 - **Linux/macOS**: `build/Release/agengit` (or `build/Debug/agengit` for debug)
 
-### 3. Clean the Build
+### 3. Install the Executable
+Install `agengit` to the system binary directory (or custom prefix) so it can be called directly from any terminal window:
+
+#### On Linux / macOS:
+```bash
+sudo cmake --install build
+```
+By default, this installs `agengit` into `/usr/local/bin/agengit`, which is automatically on standard user `$PATH`. You can immediately call `agengit` from any directory.
+
+#### On Windows:
+```powershell
+cmake --install build --config Release
+```
+By default, CMake installs `agengit.exe` into the user profile application directory: `%LOCALAPPDATA%\agengit\bin\agengit.exe` (e.g. `C:\Users\<username>\AppData\Local\agengit\bin\agengit.exe`). This allows installation without Administrator rights.
+
+To invoke `agengit` directly from any command line prompt on Windows without specifying the full path, persistently add the installation directory to your User `PATH` variable (persists across system reboots / power cycles):
+
+* **Using PowerShell (Persistent User PATH)**:
+  ```powershell
+  [Environment]::SetEnvironmentVariable("Path", [Environment]::GetEnvironmentVariable("Path", "User") + ";$env:LOCALAPPDATA\agengit\bin", "User")
+  ```
+* **Using Command Prompt (Persistent User PATH)**:
+  ```cmd
+  setx PATH "%PATH%;%LOCALAPPDATA%\agengit\bin"
+  ```
+* **Custom Installation Prefix**:
+  Alternatively, install directly into a directory already on your `%PATH%` (such as `C:\Program Files\Git\cmd`):
+  ```powershell
+  cmake --install build --prefix "C:\Program Files\Git\cmd" --config Release
+  ```
+
+### 4. Clean the Build
 To clean compilation artifacts:
 ```powershell
 cmake --build build --target clean

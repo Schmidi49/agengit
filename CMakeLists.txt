@@ -33,3 +33,24 @@ endif()
 if(WIN32 AND NOT MSVC)
     target_link_options(agengit PRIVATE -static -static-libgcc -static-libstdc++)
 endif()
+
+# Installation target
+if(WIN32 AND CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
+    if(DEFINED ENV{LOCALAPPDATA})
+        set(CMAKE_INSTALL_PREFIX "$ENV{LOCALAPPDATA}/agengit" CACHE PATH "Default install prefix" FORCE)
+    elseif(DEFINED ENV{USERPROFILE})
+        set(CMAKE_INSTALL_PREFIX "$ENV{USERPROFILE}/AppData/Local/agengit" CACHE PATH "Default install prefix" FORCE)
+    elseif(DEFINED ENV{WINEPREFIX})
+        set(CMAKE_INSTALL_PREFIX "$ENV{WINEPREFIX}/drive_c/users/root/AppData/Local/agengit" CACHE PATH "Default install prefix" FORCE)
+    else()
+        set(CMAKE_INSTALL_PREFIX "$ENV{HOME}/.wine/drive_c/users/root/AppData/Local/agengit" CACHE PATH "Default install prefix" FORCE)
+    endif()
+endif()
+
+
+include(GNUInstallDirs)
+install(TARGETS agengit
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+)
+
+
