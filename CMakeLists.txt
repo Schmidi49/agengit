@@ -29,3 +29,7 @@ if(MSVC)
 else()
     target_compile_options(agengit PRIVATE -Wall -Wextra -Wno-missing-field-initializers)
 endif()
+
+if(WIN32 AND NOT MSVC)
+    target_link_options(agengit PRIVATE -static -static-libgcc -static-libstdc++)
+endif()

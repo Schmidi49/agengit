@@ -4,7 +4,6 @@ FROM alpine:3.20
 RUN apk add --no-cache \
     wine \
     mingw-w64-gcc \
-    mingw-w64-g++ \
     cmake \
     make \
     git \
@@ -21,7 +20,9 @@ RUN wineboot --init && \
     mkdir -p "/root/.wine/drive_c/Program Files/Git" && \
     curl -sSL -o /tmp/mingit.zip https://github.com/git-for-windows/git/releases/download/v2.45.2.windows.1/MinGit-2.45.2-64-bit.zip && \
     unzip -q /tmp/mingit.zip -d "/root/.wine/drive_c/Program Files/Git" && \
-    rm /tmp/mingit.zip
+    rm /tmp/mingit.zip && \
+    sed -i '/path = C:\/Program Files/d' "/root/.wine/drive_c/Program Files/Git/etc/gitconfig" && \
+    wine reg add "HKCU\Environment" /v PATH /t REG_SZ /d "C:\Program Files\Git\cmd;C:\windows\system32;C:\windows" /f
 
 WORKDIR /workspace
 
