@@ -29,6 +29,9 @@ When validating code changes or running tests:
 
 ### 2. Opposing OS Testing (via Docker)
 - Always validate the opposing operating system using the Docker testing environments located in `docker/` (`docker/Dockerfile.alpine` for Linux, `docker/Dockerfile.wine` for Windows):
+- When working with docker, try to execute only commands listed below, as those are already whitelisted by permissions
+- When running commands during testing, execute them inside the docker container (now request prompting for the user and the entire repo is mounted into the containers)
+
   
 #### Dynamic 3-Step Container Testing Workflow
 Replace `<target>` with `alpine` or `wine`:
