@@ -14,6 +14,7 @@ RUN apk add --no-cache \
 # Environment variables for headless Wine execution
 ENV WINEPREFIX=/root/.wine
 ENV WINEDEBUG=-all
+ENV WINEPATH="C:\Program Files\Git\cmd"
 
 # Initialize Wine prefix and install MinGit (Git for Windows) inside Wine environment
 RUN wineboot --init && \

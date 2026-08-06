@@ -26,7 +26,18 @@ constexpr StateRequirement REQUIRE_DEV_BRANCH_AND_ORIGIN_MATCH = {
 // List of subcommands that are explicitly allowed with no extra checks.
 // If a command matches an allowed subcommand, it is passed through to Git.
 inline const std::vector<std::string_view> ALLOWED_COMMANDS = {
-    "status", "diff", "log"
+    // User-facing Porcelain Interrogators & Inspection
+    "status", "log", "diff", "show", "grep", "blame", "annotate",
+    "shortlog", "describe", "version", "help", "whatchanged",
+    "count-objects", "ls-files", "ls-remote", "ls-tree",
+    "check-attr", "check-ignore", "check-mailmap", "check-ref-format",
+    "column", "fmt-merge-msg", "patch-id", "var",
+
+    // Low-Level Plumbing Inspection & Analysis
+    "cat-file", "rev-parse", "rev-list", "name-rev", "for-each-ref",
+    "show-ref", "show-branch", "show-index", "verify-pack", "verify-commit",
+    "verify-tag", "diff-files", "diff-index", "diff-tree", "merge-base",
+    "cherry", "get-tar-commit-id", "merge-tree", "request-pull"
 };
 
 // Represents a blocked subcommand and its explanation message.
