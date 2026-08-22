@@ -1,6 +1,6 @@
 FROM alpine:3.20
 
-# Install Wine, MinGW-w64 cross compiler, CMake, and build tools
+# Install Wine, MinGW-w64 cross compiler, CMake, build tools, and python3 for test harness
 RUN apk add --no-cache \
     wine \
     mingw-w64-gcc \
@@ -9,7 +9,8 @@ RUN apk add --no-cache \
     git \
     bash \
     curl \
-    unzip
+    unzip \
+    python3
 
 # Environment variables for headless Wine execution
 ENV WINEPREFIX=/root/.wine

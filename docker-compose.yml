@@ -1,0 +1,30 @@
+name: agengit
+
+services:
+  alpine:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.alpine
+    container_name: agengit-alpine
+    working_dir: /workspace
+    volumes:
+      - .:/workspace
+      - ./docker:/workspace/docker:ro
+      - ./docker-compose.yml:/workspace/docker-compose.yml:ro
+      - ./.git:/workspace/.git:ro
+      - ./.agents/scripts:/workspace/.agents/scripts:ro
+    command: sh -c "cmake -B build -DCMAKE_BUILD_TYPE=Release -G Ninja && cmake --build build && ./tests/create_test_repo.sh /tmp/test_repo && tail -f /dev/null"
+
+  wine:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.wine
+    container_name: agengit-wine
+    working_dir: /workspace
+    volumes:
+      - .:/workspace
+      - ./docker:/workspace/docker:ro
+      - ./docker-compose.yml:/workspace/docker-compose.yml:ro
+      - ./.git:/workspace/.git:ro
+      - ./.agents/scripts:/workspace/.agents/scripts:ro
+    command: sh -c "cmake --preset wine-mingw && cmake --build build-wine && ./tests/create_test_repo.sh /tmp/test_repo && tail -f /dev/null"

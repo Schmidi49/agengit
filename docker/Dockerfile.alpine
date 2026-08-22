@@ -1,12 +1,13 @@
 FROM alpine:3.20
 
-# Install build dependencies, git, and cmake
+# Install build dependencies, git, cmake, and python3 for test harness
 RUN apk add --no-cache \
     build-base \
     cmake \
     git \
     bash \
-    ninja
+    ninja \
+    python3
 
 WORKDIR /workspace
 
