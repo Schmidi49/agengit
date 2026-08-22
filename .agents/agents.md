@@ -30,6 +30,7 @@
   - **Defensive & Adversarial Mindset**: Always program and test extremely defensively, assuming an adversarial developer or agent is actively trying to bypass `agengit` guardrails. Test against flag spoofing, argument injection, path traversal, dirty repository states, and unapproved subcommands. When in doubt, deny access.
   - **Test Repository Generator & Pre-Test Setup**: Whenever testing `agengit` features (natively or inside Docker), generate a fresh test Git repository using `./tests/create_test_repo.sh <target_directory>`. Clean up any temporary test sandbox directories after host execution.
   - **Test Scope & Harness Boundaries**:
+    - Each Git subcommand gets 2 test files: one for Linux (`tests/shell/test_<command>.sh`) and one for Windows (`tests/cmd/test_<command>.cmd`).
     - Shell unit tests reside in `tests/shell/*.sh` and use `tests/harness/assert.sh`.
     - Python unit tests reside in `tests/python/test_*.py` and use `pytest`.
     - Windows Batch unit tests reside in `tests/cmd/*.cmd` and use `tests/harness/assert.cmd`.
@@ -41,3 +42,7 @@
 ## **Wine & MinGW Cross-Compilation Setup**:
   - **Static Linking**: MinGW Windows binaries cross-compiled on Linux must link statically (`-static -static-libgcc -static-libstdc++`) in `CMakeLists.txt` to avoid missing runtime DLL errors (`libgcc_s_seh-1.dll`, `libstdc++-6.dll`) under Wine.
   - **Wine PATH Registry & MinGit**: When installing MinGit in Wine, add `C:\Program Files\Git\cmd` to Wine's `HKCU\Environment` registry key and remove circular `[include]` paths in `C:\Program Files\Git\etc\gitconfig`.
+  - **Windows Batch & Wine Harness Integration**:
+    - **Environment Initialization**: In minimal Wine containers, `%TEMP%` and `%TMP%` variables are unpopulated by default. Always initialize `if not defined TEMP set "TEMP=Z:\tmp"` in batch script headers and `assert.cmd`.
+    - **Pure CMD String Search**: `findstr.exe` and `find.exe` are absent in lightweight Wine containers. Use pure `cmd.exe` string substitution (`if not "!LINE!"=="!LINE:%NEEDLE%=!"`) inside `for /f` loops for string matching.
+    - **Interactive Subprocess Handling**: Subcommands like `request-pull` in Windows Git invoke external Perl/Bash wrappers under Wine. Avoid remote network URLs in Wine unit tests to prevent stdin/DNS timeouts.
