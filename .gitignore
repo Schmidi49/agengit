@@ -1,2 +1,5 @@
 /build*
 /tmp/
+test.log
+test.txt
+/tests/agengit
